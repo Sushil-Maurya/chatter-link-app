@@ -3,7 +3,7 @@ import React from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar";
 import { Button } from "../components/ui/button";
 import { Phone, Video, MoreVertical, Users, User, ArrowLeft } from "lucide-react";
-import { useTheme } from './ThemeProvider';
+import { useTheme } from '../context/ThemeProvider';
 import { useIsMobile } from '../hooks/use-mobile';
 
 interface ChatHeaderProps {

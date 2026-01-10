@@ -4,7 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar";
 import { cn } from "../lib/utils";
 import { CheckCircle, User, Users } from "lucide-react";
-import { useTheme } from './ThemeProvider';
+import { useTheme } from '../context/ThemeProvider';
 import { useIsMobile } from '../hooks/use-mobile';
 import { useToast } from '../hooks/use-toast';
 

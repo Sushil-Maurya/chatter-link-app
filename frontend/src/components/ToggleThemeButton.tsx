@@ -1,8 +1,8 @@
 
 import React from 'react';
-import { Button } from "@/components/ui/button";
+import { Button } from "../components/ui/button";
 import { Moon, Sun } from "lucide-react";
-import { useTheme } from './ThemeProvider';
+import { useTheme } from '../context/ThemeProvider';
 
 export const ToggleThemeButton: React.FC<{
   className?: string;

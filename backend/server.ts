@@ -2,17 +2,24 @@ import express from "express";
 import 'dotenv/config';
 import cors from "cors";
 import http from "http";
-import connectDB from "./lib/db.ts";
-import userRouter from "./routes/userRoutes.ts";
-import messageRouter from "./routes/messageRoutes.ts";
-import {Server} from "socket.io";
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+import connectDB from "./lib/db.js";
+import userRouter from "./routes/userRoutes.js";
+import messageRouter from "./routes/messageRoutes.js";
+import { Server } from "socket.io";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const app = express();
 const server = http.createServer(app);
 // socket io
 export const io = new Server(server,{
     cors: {
-        origin: "*",
+        origin: ["http://localhost:5173", "http://localhost:5001"],
+        methods: ["GET", "POST"],
+        credentials: true
     },
 });
 
@@ -33,7 +40,13 @@ io.on("connection", (socket) => {
     });
 });
 
-app.use(cors());
+// allow cors for frontend
+app.use(cors({
+    origin: ["http://localhost:5173", "http://localhost:5001"], // Add your frontend URL/port here
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"]
+}));
 app.use(express.json({limit:'5mb'}));
 
 app.use('/api/status', (req, res) => {
@@ -44,6 +57,11 @@ app.use('/api/status', (req, res) => {
 // Routes
 app.use('/api/auth', userRouter);
 app.use('/api/messages', messageRouter);
+
+// For backward compatibility
+app.get('/api/check-auth', (req, res) => {
+  res.redirect('/api/auth/check-auth');
+});
 
 // connect to MongoDB
  await connectDB();

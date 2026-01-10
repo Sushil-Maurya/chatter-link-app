@@ -1,7 +1,7 @@
-import cloudinary from "../lib/cloudinary.ts";
-import Message from "../models/Message.ts";
-import User from "../models/User.ts";
-import { onlineUsersMap,io } from "../server.ts";
+import cloudinary from "../lib/cloudinary.js";
+import Message from "../models/Message.js";
+import User from "../models/User.js";
+import { onlineUsersMap, io } from "../server.js";
 
 
 // Get all User except current user

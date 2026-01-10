@@ -1,7 +1,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import MessageBubble, { Message } from './MessageBubble';
-import { useTheme } from './ThemeProvider';
+import { useTheme } from '../context/ThemeProvider';
 
 interface ChatMessagesProps {
   messages: Message[];

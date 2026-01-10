@@ -15,7 +15,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar";
 import { User, Bell, Search, Plus, MoreVertical } from "lucide-react";
 import ContactList from './ContactList';
 import { useIsMobile } from '../hooks/use-mobile';
-import { useTheme } from './ThemeProvider';
+import { useTheme } from '../context/ThemeProvider';
 import { useToast } from "../hooks/use-toast";
 import ContactDrawer from './ContactDrawer';
 import {

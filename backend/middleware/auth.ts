@@ -1,25 +1,54 @@
 
 
-import { verifyToken } from "../lib/utils.ts";
-import User from "../models/User.ts";
+import { verifyToken } from "../lib/utils.js";
+import User from "../models/User.js";
 
 // auth middleware
 export const protectedRoute = async (req: any, res: any, next: any) => {
     try {
-        const token = req.headers.token;
-
-        const decoded = verifyToken(token);
-        if (!token) {
-            return res.json({ success: false, message: 'No token provided' });
+        // Get token from Authorization header
+        const authHeader = req.headers.authorization;
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            return res.status(401).json({ 
+                success: false, 
+                message: 'No token provided or invalid token format. Use Bearer token.' 
+            });
         }
+
+        const token = authHeader.split(' ')[1];
+        if (!token) {
+            return res.status(401).json({ 
+                success: false, 
+                message: 'No token provided' 
+            });
+        }
+
+        // Verify token
+        const decoded = verifyToken(token);
+        if (!decoded || !decoded.userId) {
+            return res.status(401).json({ 
+                success: false, 
+                message: 'Invalid or expired token' 
+            });
+        }
+
+        // Find user and attach to request
         const user = await User.findById(decoded.userId).select("-password");
         if (!user) {
-            return res.json({ success: false, message: 'User not found' });
+            return res.status(404).json({ 
+                success: false, 
+                message: 'User not found' 
+            });
         }
+
         req.user = user;
         next();
-    } catch (error) {
-        console.error(error)
-        res.json({ success: false, message: error.message });
+    } catch (error: any) {
+        console.error('Auth Middleware Error:', error);
+        return res.status(401).json({ 
+            success: false, 
+            message: 'Authentication failed',
+            error: error?.message || 'Unknown error occurred'
+        });
     }
 }

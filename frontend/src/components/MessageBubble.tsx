@@ -3,7 +3,7 @@ import React from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar";
 import { cn } from "../lib/utils";
 import { Check, CheckCheck, User, Users } from "lucide-react";
-import { useTheme } from './ThemeProvider';
+import { useTheme } from '../context/ThemeProvider';
 
 export interface Message {
   id: number;

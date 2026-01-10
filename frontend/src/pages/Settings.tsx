@@ -5,7 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { ArrowLeft, User, Camera, Bell, Moon, Sun, Lock, LogOut, ChevronRight } from "lucide-react";
-import { useTheme } from '../components/ThemeProvider';
+import { useTheme } from '../context/ThemeProvider';
 import { useToast } from '../hooks/use-toast';
 
 const Settings: React.FC = () => {

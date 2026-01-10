@@ -2,7 +2,7 @@
 import React, { useState, useRef } from 'react';
 import { Button } from "../components/ui/button";
 import { Paperclip, Send, Smile, Mic, Image, File, X } from "lucide-react";
-import { useTheme } from './ThemeProvider';
+import { useTheme } from '../context/ThemeProvider';
 
 interface ChatInputProps {
   onSendMessage: (message: string, file?: File) => void;

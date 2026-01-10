@@ -5,7 +5,7 @@ import ChatHeader from './ChatHeader';
 import ChatMessages from './ChatMessages';
 import ChatInput from './ChatInput';
 import { Message } from './MessageBubble';
-import { useTheme } from './ThemeProvider';
+import { useTheme } from '../context/ThemeProvider';
 import { useIsMobile } from '../hooks/use-mobile';
 import { useToast } from '../hooks/use-toast';
 import { Avatar, AvatarFallback } from './ui/avatar';

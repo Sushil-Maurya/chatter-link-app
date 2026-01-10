@@ -1,11 +1,10 @@
-
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { Eye, EyeOff, Mail, User, Lock } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { useToast } from "../hooks/use-toast";
-import { useTheme } from "../components/ThemeProvider";
+import { useAuthStore } from "../stores/useAuthStore";
 
 const Register: React.FC = () => {
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
@@ -14,9 +13,9 @@ const Register: React.FC = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  
+  const { signup, isSigningUp } = useAuthStore();
   const { toast } = useToast();
-  const { theme } = useTheme();
 
   const validateEmail = (email: string): boolean => {
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -67,21 +66,15 @@ const Register: React.FC = () => {
       return;
     }
     
-    setIsLoading(true);
-    
-    // Simulate registration process
-    setTimeout(() => {
-      // This would be a real API call in a full implementation
-      toast({
-        title: "Account created",
-        description: "Your account has been created successfully!",
-      });
-      // Navigate to login page after successful registration
-      setTimeout(() => {
-        window.location.href = "/login";
-      }, 1500);
-      setIsLoading(false);
-    }, 1500);
+    // Call signup from store
+    // bio is required by backend, checking userController.ts: if (!name || !email || !password || !bio)
+    // We add a default bio here.
+    signup({
+      name,
+      email,
+      password,
+      bio: "Hey there! I am using ChatterLink."
+    });
   };
 
   return (
@@ -190,9 +183,13 @@ const Register: React.FC = () => {
             <Button 
               type="submit" 
               className="w-full bg-primary hover:bg-primary/90"
-              disabled={isLoading}
+              disabled={isSigningUp}
             >
-              {isLoading ? "Creating account..." : "Create Account"}
+              {isSigningUp ? (
+                <>
+                  <span className="animate-spin mr-2">⏳</span> Creating account...
+                </>
+              ) : "Create Account"}
             </Button>
             
             <div className="mt-4 text-center text-sm">

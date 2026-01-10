@@ -15,7 +15,7 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar";
 import { UserPlus, X, Phone, Mail, User, RefreshCw, Contact as ContactIcon } from "lucide-react";
-import { useTheme } from '../components/ThemeProvider';
+import { useTheme } from '../context/ThemeProvider';
 import { useIsMobile } from '../hooks/use-mobile';
 
 import { useToast } from '../hooks/use-toast';

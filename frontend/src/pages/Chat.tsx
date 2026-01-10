@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import ChatLayout from '../components/ChatLayout';
 import ChatWindow from '../components/ChatWindow';
-import { useTheme } from '../components/ThemeProvider';
+import { useTheme } from '../context/ThemeProvider';
 import { useIsMobile } from '../hooks/use-mobile';
 import ContactDrawer from '../components/ContactDrawer';
 // import { Button } from '../components/ui/button';
