@@ -69,18 +69,26 @@ const Register: React.FC = () => {
     // Call signup from store
     // bio is required by backend, checking userController.ts: if (!name || !email || !password || !bio)
     // We add a default bio here.
-    signup({
+    // bio is required by backend
+    const success = await signup({
       name,
       email,
       password,
       bio: "Hey there! I am using ChatterLink."
     });
+
+    if (success) {
+      // Redirect to login page only if signup was successful
+      window.location.href = "/login"; // Using window location or navigate from hook if available. 
+      // Since it's inside component, usage of hook is better but I see 'Link' imported. I need 'useNavigate'. 
+      // Let's add useNavigate hook usage.
+    }
   };
 
   return (
-    <div className={`flex min-h-screen items-center justify-center bg-gradient-to-br from-neutral-light to-white p-4 transition-colors dark:from-neutral-dark dark:to-gray-900`}>
+    <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4 transition-colors">
       <div className="w-full max-w-md">
-        <div className="rounded-2xl bg-white p-8 shadow-soft-lg dark:bg-gray-800">
+        <div className="rounded-2xl bg-card p-8 shadow-sm border border-border">
           <div className="mb-6 text-center">
             <h1 className="mb-1 text-3xl font-bold text-gray-900 dark:text-white">Create Account</h1>
             <p className="text-gray-600 dark:text-gray-300">Sign up to get started with WhatsApp</p>

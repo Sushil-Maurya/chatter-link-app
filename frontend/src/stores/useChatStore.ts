@@ -1,4 +1,7 @@
 import { create } from 'zustand';
+import { toast } from 'react-hot-toast';
+import { axiosInstance } from "../lib/axios";
+import { useAuthStore } from "./useAuthStore";
 import { Message, Conversation } from '../types';
 
 interface ChatState {
@@ -9,14 +12,15 @@ interface ChatState {
   // Conversations
   conversations: Conversation[];
   setConversations: (conversations: Conversation[]) => void;
-  addConversation: (conversation: Conversation) => void;
-  updateConversation: (conversationId: string, updates: Partial<Conversation>) => void;
   
   // Messages
-  messages: Record<string, Message[]>; // conversationId -> messages[]
-  setMessages: (conversationId: string, messages: Message[]) => void;
-  addMessage: (conversationId: string, message: Message) => void;
-  updateMessageStatus: (conversationId: string, messageId: string, updates: Partial<Message>) => void;
+  messages: Message[];
+  isMessagesLoading: boolean;
+  getMessages: (userId: string) => Promise<void>;
+  sendMessage: (messageData: any) => Promise<void>;
+
+  subscribeToMessages: () => void;
+  unsubscribeFromMessages: () => void;
   
   // Typing indicators
   typingUsers: Record<string, Set<string>>; // conversationId -> Set of user IDs who are typing
@@ -25,6 +29,7 @@ interface ChatState {
   // Reset store
   reset: () => void;
 }
+
 
 export const useChatStore = create<ChatState>((set, get) => ({
   // Active conversation
@@ -46,39 +51,96 @@ export const useChatStore = create<ChatState>((set, get) => ({
     })),
   
   // Messages
-  messages: {},
-  setMessages: (conversationId, messages) =>
-    set((state) => ({
-      messages: {
-        ...state.messages,
-        [conversationId]: messages,
-      },
-    })),
-  addMessage: (conversationId, message) =>
-    set((state) => {
-      const currentMessages = state.messages[conversationId] || [];
-      return {
-        messages: {
-          ...state.messages,
-          [conversationId]: [...currentMessages, message],
-        },
-      };
-    }),
-  updateMessageStatus: (conversationId, messageId, updates) =>
-    set((state) => {
-      const conversationMessages = state.messages[conversationId];
-      if (!conversationMessages) return state;
-      
-      return {
-        messages: {
-          ...state.messages,
-          [conversationId]: conversationMessages.map((msg) =>
-            msg._id === messageId ? { ...msg, ...updates } : msg
-          ),
-        },
-      };
-    }),
+  messages: [],
+  isMessagesLoading: false,
+  getMessages: async (userId: string) => {
+    set({ isMessagesLoading: true });
+    try {
+      const res = await axiosInstance.get(`/messages/${userId}`);
+      if (res.data.success) {
+        set({ messages: res.data.messages });
+      } else {
+         toast.error(res.data.message || "Failed to fetch messages");
+      }
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || error.message);
+    } finally {
+      set({ isMessagesLoading: false });
+    }
+  },
+  sendMessage: async (messageData: any) => {
+    const { activeConversationId, messages } = get();
+    try {
+      const res = await axiosInstance.post(`/messages/send/${activeConversationId}`, messageData);
+      if (res.data.success) {
+        set({ messages: [...messages, res.data.message] });
+      } else {
+        toast.error(res.data.message || "Failed to send message");
+      }
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || error.message);
+    }
+  },
   
+  subscribeToMessages: () => {
+    const { activeConversationId } = get();
+    if (!activeConversationId) return;
+
+    const socket = useAuthStore.getState().socket;
+
+    socket.on("newMessage", (newMessage: Message) => {
+      const isMessageSentFromSelectedUser = newMessage.sender === activeConversationId;
+      if (!isMessageSentFromSelectedUser) return;
+
+      set({
+        messages: [...get().messages, newMessage],
+      });
+    });
+
+    socket.on("typing", ({ senderId }: { senderId: string }) => {
+       const { activeConversationId } = get();
+       if (!activeConversationId) return;
+
+       if (senderId === activeConversationId) {
+          set((state) => {
+            const currentTyping = new Set(state.typingUsers[activeConversationId] || []);
+            currentTyping.add(senderId);
+            return {
+              typingUsers: {
+                ...state.typingUsers,
+                [activeConversationId]: currentTyping,
+              }
+            };
+          });
+       }
+    });
+
+    socket.on("stopTyping", ({ senderId }: { senderId: string }) => {
+       const { activeConversationId } = get();
+       if (!activeConversationId) return;
+
+       if (senderId === activeConversationId) {
+          set((state) => {
+            const currentTyping = new Set(state.typingUsers[activeConversationId] || []);
+            currentTyping.delete(senderId);
+            return {
+              typingUsers: {
+                ...state.typingUsers,
+                [activeConversationId]: currentTyping,
+              }
+            };
+          });
+       }
+    });
+  },
+
+  unsubscribeFromMessages: () => {
+    const socket = useAuthStore.getState().socket;
+    socket.off("newMessage");
+    socket.off("typing");
+    socket.off("stopTyping");
+  },
+
   // Typing indicators
   typingUsers: {},
   setTyping: (conversationId, userId, isTyping) =>
@@ -104,7 +166,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
     set({
       activeConversationId: null,
       conversations: [],
-      messages: {},
+      messages: [],
       typingUsers: {},
     }),
 }));

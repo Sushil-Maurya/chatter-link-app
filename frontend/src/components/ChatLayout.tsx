@@ -17,6 +17,7 @@ import ContactList from './ContactList';
 import { useIsMobile } from '../hooks/use-mobile';
 import { useTheme } from '../context/ThemeProvider';
 import { useToast } from "../hooks/use-toast";
+import { useAuthStore } from '../stores/useAuthStore';
 import ContactDrawer from './ContactDrawer';
 import {
   DropdownMenu,
@@ -42,7 +43,10 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({ children }) => {
   const [userProfile, setUserProfile] = useState({ name: 'Your Name', avatar: null, status: 'online' });
   const [loading, setLoading] = useState(true);
   
+  const { logout } = useAuthStore();
+
   const handleLogout = () => {
+    logout();
     navigate('/login');
   };
   
@@ -143,6 +147,7 @@ const ChatLayoutContent: React.FC<ChatLayoutContentProps> = ({
 }) => {
   const { open, setOpen } = useSidebar();
   const { toast } = useToast();
+  const navigate = useNavigate();
   
   // Handle search input change
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -276,7 +281,8 @@ const ChatLayoutContent: React.FC<ChatLayoutContentProps> = ({
             </SidebarHeader>
             
             <SidebarContent className="overflow-y-auto flex-1 px-0 py-0">
-              <ContactList onSelect={() => {
+              <ContactList onSelect={(id) => {
+                navigate(`/chat/${id}`);
                 if (isMobile) {
                   setOpen(false);
                 }

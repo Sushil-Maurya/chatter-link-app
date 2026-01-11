@@ -12,9 +12,11 @@ export interface User {
 
 export interface Message {
   _id: string;
-  conversationId: string;
   sender: string; // User ID
-  content: string;
+  receiver: string; // User ID
+  text: string;
+  image?: string;
+  video?: string;
   read: boolean;
   createdAt: Date;
   updatedAt: Date;

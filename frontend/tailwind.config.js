@@ -43,6 +43,8 @@ export default {
   			border: 'hsl(var(--border))',
   			input: 'hsl(var(--input))',
   			ring: 'hsl(var(--ring))',
+            'neutral-light': '#f4f4f5', // zinc-100
+            'neutral-dark': '#18181b',  // zinc-900
   			chart: {
   				'1': 'hsl(var(--chart-1))',
   				'2': 'hsl(var(--chart-2))',

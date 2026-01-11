@@ -37,9 +37,9 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className={`flex min-h-screen items-center justify-center bg-gradient-to-br from-neutral-light to-white p-4 transition-colors dark:from-neutral-dark dark:to-gray-900`}>
+    <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4 transition-colors">
       <div className="w-full max-w-md">
-        <div className="rounded-2xl bg-white p-8 shadow-soft-lg dark:bg-gray-800">
+        <div className="rounded-2xl bg-card p-8 shadow-sm border border-border">
           <div className="mb-6 text-center">
             <h1 className="mb-1 text-3xl font-bold text-gray-900 dark:text-white">Welcome back</h1>
             <p className="text-gray-600 dark:text-gray-300">Log in to continue to WhatsApp</p>

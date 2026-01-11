@@ -3,23 +3,26 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar";
 import { cn } from "../lib/utils";
-import { CheckCircle, User, Users } from "lucide-react";
+import { User, Users } from "lucide-react";
 import { useTheme } from '../context/ThemeProvider';
 import { useIsMobile } from '../hooks/use-mobile';
 import { useToast } from '../hooks/use-toast';
+import { useUserStore } from '../stores/useUserStore';
 
 interface ContactWithChat  {
+  id: string;
+  name: string;
+  avatar: string;
+  status: string;
   lastMessage: string;
   unread: number;
   timestamp: string;
+  is_group: boolean;
 }
 
 interface ContactListProps {
   onSelect?: (id: string) => void;
 }
-
-const getContacts = ()=>[]
-const getChats = ()=>[]
 
 const ContactList: React.FC<ContactListProps> = ({ onSelect }) => {
   const navigate = useNavigate();
@@ -33,45 +36,33 @@ const ContactList: React.FC<ContactListProps> = ({ onSelect }) => {
   const [loading, setLoading] = useState(true);
   const [pendingContact, setPendingContact] = useState<string | null>(null);
 
-  // Function to load contacts and their chat data
+  const { users, getUsers, isLoading: isUsersLoading, onlineUsers } = useUserStore();
+
   const loadContactsWithChats = async () => {
-    try {
-      setLoading(true);
-      const [contactsData, chatsData] = await Promise.all([getContacts(), getChats()]);
-      console.log('ContactList: Loaded contacts:', contactsData.length);
-
-      // Merge contacts with their respective chat data
-      const contactsWithChats: ContactWithChat[] = contactsData.map((contact: any) => {
-        const chat = (chatsData as any).find((chat: any) => chat?.contact_id === contact?.id);
-        return {
-          ...contact,
-          lastMessage:  chat?.last_message || 'No messages yet',
-          unread: chat?.unread_count || 0,
-          timestamp: chat?.last_message_time ? formatTimestamp(chat?.last_message_time) : 'Never'
-        };
-      });
-
-      setContacts(contactsWithChats);
-      
-      // If we have a pending contact to select, select it now
-      if (pendingContact) {
-        const exists = contactsWithChats.some((c:any) => c?.id === pendingContact);
-        if (exists) {
-          handleContactClick(pendingContact);
-          setPendingContact(null);
-        }
-      }
-    } catch (error) {
-      console.error('Error loading contacts:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load contacts. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
+    // We will rely on useUserStore for users data.
+    if (users.length === 0) {
+        await getUsers();
     }
+    
+    // Transform users to ContactWithChat format
+    const contactsWithChats: ContactWithChat[] = users.map((user) => ({
+        id: user._id,
+        name: user.name,
+        avatar: user.profilePic || "",
+        status: onlineUsers.has(user._id) ? "online" : "offline",
+        lastMessage: "Start a conversation", // Placeholder
+        unread: 0,
+        timestamp: "", 
+        is_group: false
+    }));
+
+    setContacts(contactsWithChats);
+    setLoading(false);
   };
+   
+  useEffect(() => {
+    loadContactsWithChats(); 
+  }, [users, onlineUsers]);
 
   useEffect(() => {
     // Update active contact ID when route parameter changes
@@ -81,8 +72,6 @@ const ContactList: React.FC<ContactListProps> = ({ onSelect }) => {
   }, [id]);
 
   useEffect(() => {
-    loadContactsWithChats();
-    
     // Listen for the contact:added custom event
     const handleContactAdded = (event: CustomEvent<{ contact: any }>) => {
       console.log('ContactList: Contact added event received');
@@ -111,6 +100,7 @@ const ContactList: React.FC<ContactListProps> = ({ onSelect }) => {
   }, [toast, navigate]);
 
   const formatTimestamp = (timestamp: string): string => {
+    if (!timestamp) return "";
     const date = new Date(timestamp);
     const now = new Date();
     const diffTime = Math.abs(now.getTime() - date.getTime());

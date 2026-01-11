@@ -1,10 +1,14 @@
 import { create } from 'zustand';
+import { axiosInstance } from '../lib/axios';
+import { toast } from 'react-hot-toast';
 import { User } from '../types';
 
 interface UserState {
   // All users in the system (for search/contacts)
   users: User[];
+  isLoading: boolean;
   setUsers: (users: User[]) => void;
+  getUsers: () => Promise<void>;
   updateUserStatus: (userId: string, online: boolean) => void;
   
   // Online users tracking
@@ -23,7 +27,20 @@ interface UserState {
 export const useUserStore = create<UserState>((set, get) => ({
   // All users
   users: [],
+  isLoading: false,
   setUsers: (users) => set({ users }),
+  getUsers: async () => {
+    set({ isLoading: true });
+    try {
+      const res = await axiosInstance.get("/auth/users");
+      set({ users: res.data.users });
+    } catch (error: any) {
+      console.error("Error fetching users:", error);
+      toast.error(error.response?.data?.message || "Failed to fetch users");
+    } finally {
+      set({ isLoading: false });
+    }
+  },
   updateUserStatus: (userId, online) =>
     set((state) => ({
       users: state.users.map((user) =>

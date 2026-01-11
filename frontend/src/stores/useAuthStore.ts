@@ -23,7 +23,7 @@ interface AuthStore {
   socket: any;
 
   checkAuth: () => Promise<void>;
-  signup: (data: any) => Promise<void>;
+  signup: (data: any) => Promise<boolean>;
   login: (data: any) => Promise<void>;
   logout: () => Promise<void>;
   updateProfile: (data: any) => Promise<void>;
@@ -57,13 +57,12 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   signup: async (data) => {
     set({ isSigningUp: true });
     try {
-      const res = await axiosInstance.post("/auth/signup", data);
-      localStorage.setItem("token", res.data.token);
-      set({ authUser: res.data.user });
+      await axiosInstance.post("/auth/signup", data);
       toast.success("Account created successfully");
-      get().connectSocket();
+      return true; // Return true to indicate success to component
     } catch (error: any) {
       toast.error(error.response?.data?.message || error.message);
+      return false;
     } finally {
       set({ isSigningUp: false });
     }

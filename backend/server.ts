@@ -24,7 +24,7 @@ export const io = new Server(server,{
 });
 
 // store online users
-export const onlineUsersMap = {};
+export const onlineUsersMap: Record<string, string> = {};
 io.on("connection", (socket) => {
     const userId = socket.handshake.query.userId;
     console.log('user connected',userId);
@@ -33,6 +33,23 @@ io.on("connection", (socket) => {
     }
     // emit online users to all clients
     io.emit("onlineUsers", Object.keys(onlineUsersMap));
+
+    socket.on("typing", (data) => {
+        const { receiverId } = data;
+        const receiverSocketId = onlineUsersMap[receiverId];
+        if (receiverSocketId) {
+            io.to(receiverSocketId).emit("typing", { senderId: userId });
+        }
+    });
+
+    socket.on("stopTyping", (data) => {
+        const { receiverId } = data;
+        const receiverSocketId = onlineUsersMap[receiverId];
+        if (receiverSocketId) {
+            io.to(receiverSocketId).emit("stopTyping", { senderId: userId });
+        }
+    });
+
     socket.on("disconnect", () => {
         console.log('user disconnected',userId);
         delete onlineUsersMap[userId as string];
