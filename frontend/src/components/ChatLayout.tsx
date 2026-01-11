@@ -26,13 +26,12 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from "../components/ui/dropdown-menu";
+import { cn, getAvatar } from "../lib/utils";
 
 interface ChatLayoutProps {
   children: React.ReactNode;
 }
 
-const getCurrentUser = ()=> ''
-const getUserProfile = (id:string)=> ''
 const ChatLayout: React.FC<ChatLayoutProps> = ({ children }) => {
   const isMobile = useIsMobile();
   const navigate = useNavigate();
@@ -40,10 +39,14 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({ children }) => {
   const { toast } = useToast();
   const [showNewChatMenu, setShowNewChatMenu] = useState(false);
   const [search, setSearch] = useState("");
-  const [userProfile, setUserProfile] = useState({ name: 'Your Name', avatar: null, status: 'online' });
-  const [loading, setLoading] = useState(true);
   
-  const { logout } = useAuthStore();
+  const { logout, authUser } = useAuthStore();
+  
+  const userProfile = {
+    name: authUser?.name || 'User',
+    avatar: getAvatar(authUser?.profilePic, authUser?.gender),
+    status: 'online'
+  };
 
   const handleLogout = () => {
     logout();
@@ -58,31 +61,7 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({ children }) => {
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearch(e.target.value);
   };
-  
-  useEffect(() => {
-    async function loadUserProfile() {
-      try {
-        setLoading(true);
-        const user:any = await getCurrentUser();
-        if (user) {
-          const profile:any = await getUserProfile(user?.id);
-          if (profile) {
-            setUserProfile({
-              name: profile?.name,
-              avatar: profile?.avatar,
-              status: 'online'
-            });
-          }
-        }
-      } catch (error) {
-        console.error('Error loading user profile:', error);
-      } finally {
-        setLoading(false);
-      }
-    }
-    
-    loadUserProfile();
-  }, []);
+   // useEffect Removed as data comes from store synchronously (persisted)
   
   const handleNewChat = () => {
     setShowNewChatMenu((prev) => !prev);
@@ -94,7 +73,7 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({ children }) => {
 
   const NewChatMenuOverlay = () => (
     <div
-      className="fixed inset-0 z-40 bg-black/30"
+      className="fixed inset-0 z-40 bg-black/30 cursor-pointer"
       onClick={closeNewChatMenu}
       aria-label="Close New Chat Menu"
     />
@@ -208,7 +187,7 @@ const ChatLayoutContent: React.FC<ChatLayoutContentProps> = ({
         {/* Mobile overlay when sidebar is open */}
         {isMobile && open && (
           <div 
-            className="fixed inset-0 bg-black/50 z-30 md:hidden"
+            className="fixed inset-0 bg-black/50 z-30 md:hidden cursor-pointer"
             onClick={() => setOpen(false)}
           />
         )}
@@ -236,7 +215,7 @@ const ChatLayoutContent: React.FC<ChatLayoutContentProps> = ({
                   <ContactDrawer />
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon">
+                      <Button variant="ghost" size="icon" className="cursor-pointer">
                         <MoreVertical className="h-5 w-5" />
                       </Button>
                     </DropdownMenuTrigger>

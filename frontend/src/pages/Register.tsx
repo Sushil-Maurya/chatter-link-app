@@ -13,6 +13,7 @@ const Register: React.FC = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [gender, setGender] = useState<"male" | "female">("male");
   
   const { signup, isSigningUp } = useAuthStore();
   const { toast } = useToast();
@@ -74,6 +75,7 @@ const Register: React.FC = () => {
       name,
       email,
       password,
+      gender,
       bio: "Hey there! I am using ChatterLink."
     });
 
@@ -175,16 +177,44 @@ const Register: React.FC = () => {
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="Confirm your password"
-                  className="pl-10 pr-10"
+                  className="pl-10 pr-10 cursor-pointer"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setIsConfirmPasswordVisible(!isConfirmPasswordVisible)}
-                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400"
+                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 cursor-pointer"
                 >
                   {isConfirmPasswordVisible ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Gender
+              </label>
+              <div className="grid grid-cols-2 gap-4">
+                 <div
+                    className={`flex items-center justify-center p-3 border rounded-lg cursor-pointer transition-all ${
+                      gender === "male"
+                        ? "bg-primary/10 border-primary"
+                        : "bg-background border-input hover:bg-accent hover:text-accent-foreground"
+                    }`}
+                    onClick={() => setGender("male")}
+                  >
+                    <span className="text-sm font-medium">Male</span>
+                  </div>
+                  <div
+                    className={`flex items-center justify-center p-3 border rounded-lg cursor-pointer transition-all ${
+                      gender === "female"
+                        ? "bg-primary/10 border-primary"
+                        : "bg-background border-input hover:bg-accent hover:text-accent-foreground"
+                    }`}
+                    onClick={() => setGender("female")}
+                  >
+                    <span className="text-sm font-medium">Female</span>
+                  </div>
               </div>
             </div>
             

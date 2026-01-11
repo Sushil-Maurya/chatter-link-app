@@ -10,7 +10,7 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 // Get all User except current user
 export const getAllUsers = asyncHandler(async (req: any, res: any) => {
     const userId = req.user._id;
-    const filteredUsers = await User.find({ _id: { $ne: userId } }).select("-password");
+    const filteredUsers = await User.find().select("-password");
     
     // count the number of messages not read
     let unsendMessages: Record<string, number> = {};

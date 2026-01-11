@@ -2,16 +2,10 @@ import { create } from "zustand";
 import { authService } from "../services/authService";
 import { toast } from "react-hot-toast";
 import { io } from "socket.io-client";
+import { useUserStore } from "./useUserStore";
+import { User } from "../types";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL || "http://localhost:5001";
-
-interface User {
-  _id: string;
-  name: string;
-  email: string;
-  profilePic: string;
-  bio: string;
-}
 
 interface AuthStore {
   authUser: User | null;
@@ -123,11 +117,13 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
     socket.on("getOnlineUsers", (userIds: string[]) => {
       set({ onlineUsers: userIds });
+      useUserStore.getState().setOnlineUsers(userIds);
     });
     
     // Also listen for "onlineUsers" event as server might emit that
     socket.on("onlineUsers", (userIds: string[]) => {
       set({ onlineUsers: userIds });
+      useUserStore.getState().setOnlineUsers(userIds);
     });
   },
 

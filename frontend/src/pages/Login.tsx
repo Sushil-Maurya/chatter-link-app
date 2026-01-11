@@ -84,7 +84,7 @@ const Login: React.FC = () => {
                 <button
                   type="button"
                   onClick={togglePasswordVisibility}
-                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400"
+                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 cursor-pointer"
                 >
                   {isPasswordVisible ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>

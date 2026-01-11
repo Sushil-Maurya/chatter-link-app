@@ -2,12 +2,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar";
-import { cn } from "../lib/utils";
+import { cn, getAvatar } from "../lib/utils";
 import { User, Users } from "lucide-react";
 import { useTheme } from '../context/ThemeProvider';
 import { useIsMobile } from '../hooks/use-mobile';
 import { useToast } from '../hooks/use-toast';
 import { useUserStore } from '../stores/useUserStore';
+import { useAuthStore } from '../stores/useAuthStore';
 
 interface ContactWithChat  {
   id: string;
@@ -37,6 +38,7 @@ const ContactList: React.FC<ContactListProps> = ({ onSelect }) => {
   const [pendingContact, setPendingContact] = useState<string | null>(null);
 
   const { users, getUsers, isLoading: isUsersLoading, onlineUsers } = useUserStore();
+  const { authUser } = useAuthStore();
 
   const loadContactsWithChats = async () => {
     // We will rely on useUserStore for users data.
@@ -45,16 +47,19 @@ const ContactList: React.FC<ContactListProps> = ({ onSelect }) => {
     }
     
     // Transform users to ContactWithChat format
-    const contactsWithChats: ContactWithChat[] = users.map((user) => ({
+    const contactsWithChats: ContactWithChat[] = users.map((user) => {
+      const isSelf = user._id === authUser?._id;
+      return {
         id: user._id,
-        name: user.name,
-        avatar: user.profilePic || "",
+        name: isSelf ? `${user.name} (You)` : user.name,
+        avatar: getAvatar(user.profilePic, user.gender),
         status: onlineUsers.has(user._id) ? "online" : "offline",
-        lastMessage: "Start a conversation", // Placeholder
+        lastMessage: isSelf ? "Message yourself" : "Start a conversation", // Placeholder
         unread: 0,
         timestamp: "", 
         is_group: false
-    }));
+      };
+    });
 
     setContacts(contactsWithChats);
     setLoading(false);
@@ -164,7 +169,8 @@ const ContactList: React.FC<ContactListProps> = ({ onSelect }) => {
                 : 'bg-primary text-white'
               : theme === 'dark'
                 ? 'text-gray-300 hover:bg-gray-700'
-                : 'text-gray-600 hover:bg-gray-100'
+                : 'text-gray-600 hover:bg-gray-100',
+            "cursor-pointer"
           )}
           onClick={() => setFilterType('all')}
         >
@@ -179,7 +185,8 @@ const ContactList: React.FC<ContactListProps> = ({ onSelect }) => {
                 : 'bg-primary text-white'
               : theme === 'dark'
                 ? 'text-gray-300 hover:bg-gray-700'
-                : 'text-gray-600 hover:bg-gray-100'
+                : 'text-gray-600 hover:bg-gray-100',
+            "cursor-pointer"
           )}
           onClick={() => setFilterType('unread')}
         >
@@ -194,7 +201,8 @@ const ContactList: React.FC<ContactListProps> = ({ onSelect }) => {
                 : 'bg-primary text-white'
               : theme === 'dark'
                 ? 'text-gray-300 hover:bg-gray-700'
-                : 'text-gray-600 hover:bg-gray-100'
+                : 'text-gray-600 hover:bg-gray-100',
+            "cursor-pointer"
           )}
           onClick={() => setFilterType('groups')}
         >

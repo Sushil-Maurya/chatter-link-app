@@ -8,9 +8,9 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 
 // signup a new user
 export const signup = asyncHandler(async (req: any, res: any) => {
-    const { name, email, password, profilePic, bio } = req.body;
+    const { name, email, password, profilePic, bio, gender } = req.body;
 
-    if (!name || !email || !password || !bio) {
+    if (!name || !email || !password || !bio || !gender) {
         throw new ApiError(400, 'All fields are required');
     }
     const user = await User.findOne({ email });
@@ -21,7 +21,7 @@ export const signup = asyncHandler(async (req: any, res: any) => {
     const salt = await bcryptjs.genSalt(10);
     const hashedPassword = await bcryptjs.hash(password, salt);
 
-    const newUser = await User.create({ name, email, password: hashedPassword, profilePic, bio });
+    const newUser = await User.create({ name, email, password: hashedPassword, profilePic, bio, gender });
 
     const token = generateToken(newUser._id.toString());
 

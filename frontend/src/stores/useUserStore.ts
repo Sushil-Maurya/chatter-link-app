@@ -14,6 +14,7 @@ interface UserState {
   // Online users tracking
   onlineUsers: Set<string>; // Set of user IDs who are online
   setUserOnline: (userId: string, isOnline: boolean) => void;
+  setOnlineUsers: (userIds: string[]) => void;
   
   // Search functionality
   searchQuery: string;
@@ -67,6 +68,7 @@ export const useUserStore = create<UserState>((set, get) => ({
       
       return { onlineUsers };
     }),
+  setOnlineUsers: (userIds) => set({ onlineUsers: new Set(userIds) }),
   
   // Search
   searchQuery: '',

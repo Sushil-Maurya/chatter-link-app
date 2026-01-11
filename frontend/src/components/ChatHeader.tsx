@@ -71,13 +71,13 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
         </div>
       </div>
       <div className="flex items-center gap-1">
-        <Button variant="ghost" size="icon" onClick={onCallClick}>
+        <Button variant="ghost" size="icon" onClick={onCallClick} className="cursor-pointer">
           <Phone className="h-5 w-5" />
         </Button>
-        <Button variant="ghost" size="icon" onClick={onVideoClick}>
+        <Button variant="ghost" size="icon" onClick={onVideoClick} className="cursor-pointer">
           <Video className="h-5 w-5" />
         </Button>
-        <Button variant="ghost" size="icon" onClick={onInfoClick}>
+        <Button variant="ghost" size="icon" onClick={onInfoClick} className="cursor-pointer">
           <MoreVertical className="h-5 w-5" />
         </Button>
       </div>

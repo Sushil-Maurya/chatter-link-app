@@ -68,14 +68,14 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage }) => {
           <div className="flex flex-col gap-2">
             <button 
               onClick={handleImageUpload}
-              className={`flex items-center gap-2 p-2 rounded ${theme === 'dark' ? 'hover:bg-gray-600' : 'hover:bg-gray-100'}`}
+              className={`flex items-center gap-2 p-2 rounded cursor-pointer ${theme === 'dark' ? 'hover:bg-gray-600' : 'hover:bg-gray-100'}`}
             >
               <Image className="h-5 w-5 text-blue-500" />
               <span>Image</span>
             </button>
             <button 
               onClick={handleImageUpload}
-              className={`flex items-center gap-2 p-2 rounded ${theme === 'dark' ? 'hover:bg-gray-600' : 'hover:bg-gray-100'}`}
+              className={`flex items-center gap-2 p-2 rounded cursor-pointer ${theme === 'dark' ? 'hover:bg-gray-600' : 'hover:bg-gray-100'}`}
             >
               <File className="h-5 w-5 text-green-500" />
               <span>Document</span>

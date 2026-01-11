@@ -3,6 +3,7 @@ export interface User {
   name: string;
   email: string;
   profilePic?: string;
+  gender: "male" | "female";
   bio?: string;
   online?: boolean;
   lastSeen?: Date;

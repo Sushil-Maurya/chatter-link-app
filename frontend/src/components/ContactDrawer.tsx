@@ -392,7 +392,7 @@ const ContactDrawer: React.FC<ContactDrawerProps> = ({ onContactSelected }) => {
         <div className="text-lg font-semibold">New Chat</div>
         {!isMobile && (
           <button 
-            className="absolute right-4 top-4 rounded-sm opacity-70 transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none"
+            className="absolute right-4 top-4 rounded-sm opacity-70 transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none cursor-pointer"
             onClick={() => setIsOpen(false)}
           >
             <X className="h-4 w-4" />
@@ -412,7 +412,7 @@ const ContactDrawer: React.FC<ContactDrawerProps> = ({ onContactSelected }) => {
           />
           {searchQuery && (
             <button 
-              className="absolute right-2 top-2.5 text-gray-400 hover:text-gray-600"
+              className="absolute right-2 top-2.5 text-gray-400 hover:text-gray-600 cursor-pointer"
               onClick={() => setSearchQuery('')}
             >
               <X className="h-4 w-4" />
@@ -534,7 +534,7 @@ const ContactDrawer: React.FC<ContactDrawerProps> = ({ onContactSelected }) => {
             <Button 
               variant="ghost" 
               size="icon" 
-              className="text-primary hover:bg-primary/10"
+              className="text-primary hover:bg-primary/10 cursor-pointer"
               ref={setTriggerRef}
             >
               <UserPlus className="h-5 w-5" />

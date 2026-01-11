@@ -11,6 +11,7 @@ import { useChatStore } from '../stores/useChatStore';
 import { useUserStore } from '../stores/useUserStore';
 import { useAuthStore } from '../stores/useAuthStore';
 import { Message as UIMessage } from './MessageBubble';
+import { getAvatar } from '../lib/utils';
 
 interface ChatWindowProps {
   contactId: string;
@@ -23,7 +24,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ contactId }) => {
   const { toast } = useToast();
   
   const { messages: storeMessages, getMessages, sendMessage, subscribeToMessages, unsubscribeFromMessages, isMessagesLoading, setActiveConversation, typingUsers } = useChatStore();
-  const { users } = useUserStore();
+  const { users, onlineUsers } = useUserStore();
   const { authUser } = useAuthStore();
   
   const contact = users.find(u => u._id === contactId);
@@ -31,6 +32,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ contactId }) => {
   
   // Derive typing status from store
   const isTyping = Boolean(contactId && typingUsers[contactId]?.has(contactId));
+  const isOnline = contact ? onlineUsers.has(contact._id) : false;
 
   useEffect(() => {
     setActiveConversation(contactId);
@@ -140,8 +142,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ contactId }) => {
     <div className="flex flex-col h-full">
       <ChatHeader 
         contactName={contact.name} 
-        contactStatus={isTyping ? 'typing' : (contact.online ? 'online' : 'offline')} 
-        contactAvatar={contact.profilePic || undefined}
+        contactStatus={isTyping ? 'typing' : (isOnline ? 'online' : 'offline')} 
+        contactAvatar={getAvatar(contact.profilePic, contact.gender)}
         isGroup={false}
         onInfoClick={handleInfoClick}
         onCallClick={handleCallClick}
@@ -167,21 +169,26 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ contactId }) => {
             <div className="p-4 border-b flex flex-col items-center">
               <div className="mb-4">
                 <img 
-                  src={contact.profilePic || "https://via.placeholder.com/150"} 
+                  src={getAvatar(contact.profilePic, contact.gender)} 
                   alt={contact.name}
                   className="w-32 h-32 rounded-full object-cover"
                 />
               </div>
               <h3 className="text-lg font-medium">{contact.name}</h3>
-              <p className={`text-sm ${contact.online ? 'text-green-500' : 'text-gray-500'}`}>
-                {contact.online ? 'Online' : 'Offline'}
+              <p className={`text-sm ${isOnline ? 'text-green-500' : 'text-gray-500'}`}>
+                {isOnline ? 'Online' : 'Offline'}
               </p>
             </div>
             
             <div className="p-4 border-b">
               <h4 className="text-sm font-medium mb-2">About</h4>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
                 {contact.bio || "Hey there! I'm using ChatterLink."}
+              </p>
+              
+               <h4 className="text-sm font-medium mb-2">Gender</h4>
+               <p className="text-sm text-gray-600 dark:text-gray-400 capitalize">
+                {contact.gender}
               </p>
             </div>
           </div>
