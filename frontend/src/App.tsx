@@ -7,7 +7,7 @@ import Chat from './pages/Chat';
 import Settings from './pages/Settings';
 import NotFound from './pages/NotFound';
 import { ThemeProvider } from './context/ThemeProvider';
-import { Toaster } from './components/ui/toaster';
+import { Toaster } from 'react-hot-toast';
 import { useAuthStore } from './stores/useAuthStore';
 
 // Protected Route component

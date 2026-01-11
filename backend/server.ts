@@ -8,6 +8,7 @@ import connectDB from "./lib/db.js";
 import userRouter from "./routes/userRoutes.js";
 import messageRouter from "./routes/messageRoutes.js";
 import { Server } from "socket.io";
+import { errorHandler } from "./middleware/errorHandler.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -74,6 +75,9 @@ app.use('/api/status', (req, res) => {
 // Routes
 app.use('/api/auth', userRouter);
 app.use('/api/messages', messageRouter);
+
+// Global Error Handler
+app.use(errorHandler as any);
 
 // For backward compatibility
 app.get('/api/check-auth', (req, res) => {

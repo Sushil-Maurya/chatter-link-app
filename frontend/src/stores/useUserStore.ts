@@ -1,6 +1,6 @@
 import { create } from 'zustand';
-import { axiosInstance } from '../lib/axios';
-import { toast } from 'react-hot-toast';
+import { userService } from '../services/userService';
+// toast is handled globally by request layer
 import { User } from '../types';
 
 interface UserState {
@@ -32,11 +32,16 @@ export const useUserStore = create<UserState>((set, get) => ({
   getUsers: async () => {
     set({ isLoading: true });
     try {
-      const res = await axiosInstance.get("/auth/users");
-      set({ users: res.data.users });
+      const res = await userService.getAllUsers();
+      // Backend returns { success, result: { users } }
+      if (res?.result?.users) {
+        set({ users: res.result.users });
+      } else if (res?.users) {
+        // Fallback for legacy response if API didn't change correctly
+        set({ users: res.users });
+      }
     } catch (error: any) {
-      console.error("Error fetching users:", error);
-      toast.error(error.response?.data?.message || "Failed to fetch users");
+       // Error handled globally
     } finally {
       set({ isLoading: false });
     }

@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { toast } from 'react-hot-toast';
-import { axiosInstance } from "../lib/axios";
+import { chatService } from "../services/chatService";
 import { useAuthStore } from "./useAuthStore";
 import { Message, Conversation } from '../types';
 
@@ -56,14 +56,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
   getMessages: async (userId: string) => {
     set({ isMessagesLoading: true });
     try {
-      const res = await axiosInstance.get(`/messages/${userId}`);
-      if (res.data.success) {
-        set({ messages: res.data.messages });
-      } else {
-         toast.error(res.data.message || "Failed to fetch messages");
-      }
+      const res = await chatService.getMessages(userId);
+      set({ messages: res.result.messages });
     } catch (error: any) {
-      toast.error(error.response?.data?.message || error.message);
+      // Error handled globally
     } finally {
       set({ isMessagesLoading: false });
     }
@@ -71,14 +67,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
   sendMessage: async (messageData: any) => {
     const { activeConversationId, messages } = get();
     try {
-      const res = await axiosInstance.post(`/messages/send/${activeConversationId}`, messageData);
-      if (res.data.success) {
-        set({ messages: [...messages, res.data.message] });
-      } else {
-        toast.error(res.data.message || "Failed to send message");
-      }
+      const res = await chatService.sendMessage(activeConversationId!, messageData); 
+      set({ messages: [...messages, res.result.message] }); 
     } catch (error: any) {
-      toast.error(error.response?.data?.message || error.message);
+        // Error handled globally
     }
   },
   
