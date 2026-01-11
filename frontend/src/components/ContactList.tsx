@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar";
+import { Button } from "../components/ui/button";
 import { cn, getAvatar } from "../lib/utils";
 import { Users, Search, Loader2, Plus } from "lucide-react";
 import { useTheme } from '../context/ThemeProvider';
@@ -9,6 +10,7 @@ import { useIsMobile } from '../hooks/use-mobile';
 import { useToast } from '../hooks/use-toast';
 import { useUserStore } from '../stores/useUserStore';
 import { useAuthStore } from '../stores/useAuthStore';
+import InviteSharingModal from './InviteSharingModal';
 
 interface ContactWithChat  {
   id: string;
@@ -42,8 +44,10 @@ const ContactList: React.FC<ContactListProps> = ({ onSelect, searchQuery: extern
   const [globalResults, setGlobalResults] = useState<any[]>([]);
   const [isSearchingGlobal, setIsSearchingGlobal] = useState(false);
 
-  const { users, getUsers, onlineUsers, searchGlobalUsers } = useUserStore();
+  const { users, pendingInvites, lastMessages, unreadCounts, getUsers, onlineUsers, searchGlobalUsers, addContact: addContactToStore } = useUserStore();
   const { authUser } = useAuthStore();
+  const [selectedInvite, setSelectedInvite] = useState<any | null>(null);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
   const currentSearchQuery = externalSearchQuery !== undefined ? externalSearchQuery : localSearchQuery;
 
@@ -52,29 +56,35 @@ const ContactList: React.FC<ContactListProps> = ({ onSelect, searchQuery: extern
     getUsers();
   }, []);
 
-  const loadContactsWithChats = () => {
-    // Transform users to ContactWithChat format
-    const contactsWithChats: ContactWithChat[] = users.map((user) => {
-      const isSelf = user._id === authUser?._id;
-      return {
-        id: user._id,
-        name: isSelf ? `${user.name} (You)` : user.name,
-        avatar: getAvatar(user.profilePic, user.gender),
-        status: onlineUsers.has(user._id) ? "online" : "offline",
-        lastMessage: isSelf ? "Message yourself" : "Start a conversation", // Placeholder
-        unread: 0,
-        timestamp: "", 
-        is_group: false
-      };
-    });
-
-    setContacts(contactsWithChats);
-    setLoading(false);
-  };
-   
   useEffect(() => {
-    loadContactsWithChats(); 
-  }, [users, onlineUsers]);
+    // Transform users and pendingInvites into a unified list
+    // BUT only show those with message history in the sidebar (Conversations)
+    const mappedUsers = users
+      .filter(user => lastMessages[user._id]) // ONLY users with history
+      .map((user) => {
+        const isSelf = user._id === authUser?._id;
+        const lastMsg = lastMessages[user._id];
+        const unread = unreadCounts[user._id] || 0;
+        
+        return {
+          id: user._id,
+          name: isSelf ? `${user.name} (You)` : user.name,
+          avatar: getAvatar(user.profilePic, user.gender),
+          status: onlineUsers.has(user._id) ? "online" : "offline",
+          lastMessage: lastMsg?.text || (isSelf ? "Message yourself" : "Start a conversation"),
+          unread: unread,
+          timestamp: lastMsg ? new Date(lastMsg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "", 
+          is_group: false,
+          isInvite: false,
+          email: user.email,
+          phone: user.phone
+        };
+      });
+
+    // Sidebar should NOT show pending invites according to user request
+    setContacts(mappedUsers);
+    setLoading(false);
+  }, [users, pendingInvites, lastMessages, unreadCounts, onlineUsers, authUser]);
 
   // Handle Global Search when query changes
   useEffect(() => {
@@ -111,30 +121,13 @@ const ContactList: React.FC<ContactListProps> = ({ onSelect, searchQuery: extern
   }, [id]);
 
   useEffect(() => {
-    // Listen for the contact:added custom event
-    const handleContactAdded = (event: CustomEvent<{ contact: any }>) => {
-      console.log('ContactList: Contact added event received');
-      if (event.detail?.contact?.id) {
-        // Navigate to the new contact's chat
-        navigate(`/chat/${event.detail.contact.id}`);
-      }
-      loadContactsWithChats();
-    };
-    
-    window.addEventListener('contact:added', handleContactAdded as EventListener);
-    
-    // Listen for message:sent custom event to refresh contacts list
-    const handleMessageSent = () => {
-      loadContactsWithChats();
-    };
-    
+    const handleMessageSent = () => getUsers();
     window.addEventListener('message:sent', handleMessageSent);
     
     return () => {
-      window.removeEventListener('contact:added', handleContactAdded as EventListener);
       window.removeEventListener('message:sent', handleMessageSent);
     };
-  }, [toast, navigate]);
+  }, [getUsers]);
 
 
   const handleContactClick = (contactId: string) => {
@@ -159,26 +152,29 @@ const ContactList: React.FC<ContactListProps> = ({ onSelect, searchQuery: extern
 
   // Handler for global search results - adds contact first, then navigates
   const handleGlobalContactClick = async (user: any, event?: React.MouseEvent) => {
-    // Prevent event bubbling if clicking the Plus button
     if (event) {
       event.stopPropagation();
     }
 
     try {
-      // Add contact first
-      await useUserStore.getState().addContact(user._id);
+      const res = await addContactToStore({ userId: user._id });
       
-      // Show success message
-      toast({
-        title: "Contact Added",
-        description: `${user.name} has been added to your contacts`,
-      });
-
-      // Remove from global results
+      if (res.result?.status === 'invited') {
+        setSelectedInvite({
+          name: res.result.targetName,
+          email: user.email,
+          phone: user.phone,
+          inviteUrl: res.result.inviteUrl
+        });
+        setIsShareModalOpen(true);
+      } else {
+        toast({
+          title: "Contact Added",
+          description: `${user.name} has been added to your contacts`,
+        });
+        handleContactClick(user._id);
+      }
       setGlobalResults(prev => prev.filter(u => u._id !== user._id));
-
-      // Navigate to chat
-      handleContactClick(user._id);
     } catch (error) {
       console.error('Failed to add contact:', error);
       toast({
@@ -300,7 +296,14 @@ const ContactList: React.FC<ContactListProps> = ({ onSelect, searchQuery: extern
                       : 'bg-gray-100'
                   )
                 )}
-                onClick={() => handleContactClick(contact.id)}
+                onClick={() => {
+                  if (contact.isInvite) {
+                    setSelectedInvite(contact);
+                    setIsShareModalOpen(true);
+                  } else {
+                    handleContactClick(contact.id);
+                  }
+                }}
               >
                 <div className="relative flex-shrink-0">
                   <Avatar className="h-12 w-12">
@@ -314,15 +317,17 @@ const ContactList: React.FC<ContactListProps> = ({ onSelect, searchQuery: extern
                       {contact.is_group ? <Users className="h-6 w-6" /> : contact.name.charAt(0)}
                     </AvatarFallback>
                   </Avatar>
-                  <span
-                    className={cn(
-                      "absolute bottom-0 right-0 h-3 w-3 rounded-full border-2",
-                      theme === 'dark' ? 'border-gray-900' : 'border-white',
-                      contact.status === "online"
-                        ? "bg-green-500"
-                        : "bg-gray-400"
-                    )}
-                  />
+                  {!contact.isInvite && (
+                    <span
+                      className={cn(
+                        "absolute bottom-0 right-0 h-3 w-3 rounded-full border-2",
+                        theme === 'dark' ? 'border-gray-900' : 'border-white',
+                        contact.status === "online"
+                          ? "bg-green-500"
+                          : "bg-gray-400"
+                      )}
+                    />
+                  )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex justify-between items-baseline">
@@ -348,12 +353,26 @@ const ContactList: React.FC<ContactListProps> = ({ onSelect, searchQuery: extern
                         ? theme === 'dark' ? "text-gray-300" : "text-gray-900"
                         : theme === 'dark' ? "text-gray-400" : "text-gray-500"
                     )}>
-                      {contact.lastMessage}
+                      {contact.isInvite ? (contact.email || contact.phone) : contact.lastMessage}
                     </p>
                     {contact.unread > 0 && (
                       <span className="ml-2 bg-primary text-white text-xs rounded-full h-5 min-w-[20px] flex items-center justify-center px-1">
                         {contact.unread}
                       </span>
+                    )}
+                    {contact.isInvite && (
+                      <Button 
+                        size="sm" 
+                        variant="ghost" 
+                        className="h-8 text-xs text-primary hover:bg-primary/10"
+                        onClick={(e: React.MouseEvent) => {
+                          e.stopPropagation();
+                          setSelectedInvite(contact);
+                          setIsShareModalOpen(true);
+                        }}
+                      >
+                        Invite
+                      </Button>
                     )}
                   </div>
                 </div>
@@ -406,6 +425,11 @@ const ContactList: React.FC<ContactListProps> = ({ onSelect, searchQuery: extern
           </>
         )}
       </div>
+      <InviteSharingModal 
+        isOpen={isShareModalOpen} 
+        onOpenChange={setIsShareModalOpen} 
+        invitee={selectedInvite} 
+      />
     </div>
   );
 };

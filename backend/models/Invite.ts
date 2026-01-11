@@ -14,6 +14,10 @@ const inviteSchema = new mongoose.Schema({
         type: String,
         default: null
     },
+    targetName: {
+        type: String,
+        default: null
+    },
     token: {
         type: String,
         required: true,

@@ -2,6 +2,7 @@ export interface User {
   _id: string;
   name: string;
   email: string;
+  phone?: string;
   profilePic?: string;
   gender: "male" | "female";
   bio?: string;

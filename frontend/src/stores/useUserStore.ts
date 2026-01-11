@@ -6,6 +6,9 @@ import { User } from '../types';
 interface UserState {
   // All users in the system (for search/contacts)
   users: User[];
+  pendingInvites: any[];
+  unreadCounts: Record<string, number>;
+  lastMessages: Record<string, any>;
   isLoading: boolean;
   setUsers: (users: User[]) => void;
   getUsers: () => Promise<void>;
@@ -19,9 +22,9 @@ interface UserState {
   // Search functionality
   searchQuery: string;
   setSearchQuery: (query: string) => void;
-  getFilteredUsers: () => User[];
+  getFilteredUsers: () => any[];
   searchGlobalUsers: (query: string) => Promise<User[]>;
-  addContact: (userId: string) => Promise<void>;
+  addContact: (data: { userId?: string, name?: string, email?: string, phone?: string }) => Promise<any>;
   
   // Reset store
   reset: () => void;
@@ -30,6 +33,9 @@ interface UserState {
 export const useUserStore = create<UserState>((set, get) => ({
   // All users
   users: [],
+  pendingInvites: [],
+  unreadCounts: {},
+  lastMessages: {},
   isLoading: false,
   setUsers: (users) => set({ users }),
   getUsers: async () => {
@@ -39,12 +45,17 @@ export const useUserStore = create<UserState>((set, get) => ({
     set({ isLoading: true });
     try {
       const res = await userService.getAllUsers();
-      // Backend returns { success, result: { users } }
-      if (res?.result?.users) {
-        set({ users: res.result.users });
+      // Backend returns { success, result: { users, pendingInvites } }
+      if (res?.result) {
+        set({ 
+          users: res.result.users || [],
+          pendingInvites: res.result.pendingInvites || [],
+          unreadCounts: res.result.unsendMessages || {},
+          lastMessages: res.result.lastMessages || {}
+        });
       } else if (res?.users) {
-        // Fallback for legacy response if API didn't change correctly
-        set({ users: res.users });
+        // Fallback for legacy response
+        set({ users: res.users, pendingInvites: [], unreadCounts: {}, lastMessages: {} });
       }
     } catch (error: any) {
        // Error handled globally
@@ -79,42 +90,63 @@ export const useUserStore = create<UserState>((set, get) => ({
   searchQuery: '',
   setSearchQuery: (query) => set({ searchQuery: query }),
   getFilteredUsers: () => {
-    const { users, searchQuery, onlineUsers } = get();
+    const { users, pendingInvites, searchQuery, onlineUsers } = get();
     
+    // Map registered users with online status
+    const mappedUsers = users.map(user => ({
+      ...user,
+      online: onlineUsers.has(user._id),
+      isInvite: false
+    }));
+
+    // Map pending invites
+    const mappedInvites = pendingInvites.map(invite => ({
+      _id: invite._id,
+      name: invite.targetName || "Unknown",
+      email: invite.targetEmail,
+      phone: invite.targetPhone,
+      inviteUrl: invite.inviteUrl,
+      isInvite: true
+    }));
+
+    const allContacts = [...mappedUsers, ...mappedInvites];
+
     if (!searchQuery.trim()) {
-      return users.map(user => ({
-        ...user,
-        online: onlineUsers.has(user._id)
-      }));
+      return allContacts;
     }
     
     const query = searchQuery.toLowerCase();
-    return users
-      .filter(
-        (user) =>
-          user.name.toLowerCase().includes(query) ||
-          user.email.toLowerCase().includes(query)
-      )
-      .map(user => ({
-        ...user,
-        online: onlineUsers.has(user._id)
-      }));
+    return allContacts.filter(
+      (contact: any) =>
+        contact.name.toLowerCase().includes(query) ||
+        (contact.email && contact.email.toLowerCase().includes(query)) ||
+        (contact.phone && contact.phone.toLowerCase().includes(query))
+    );
   },
   
   // Reset store
   reset: () =>
     set({
       users: [],
+      pendingInvites: [],
+      unreadCounts: {},
+      lastMessages: {},
       onlineUsers: new Set(),
       searchQuery: '',
     }),
 
   // Add Contact
-  addContact: async (userId: string) => {
+  addContact: async (data: { userId?: string, name?: string, email?: string, phone?: string }) => {
       try {
-          await userService.addContact({ id: userId });
-          // Refresh users list to include new contact
+          const res = await userService.addContact({ 
+            id: data.userId,
+            name: data.name,
+            email: data.email,
+            phone: data.phone
+          });
+          // Refresh users list to include new contact or pending invite
           await get().getUsers(); 
+          return res;
       } catch (error) {
           console.error("Failed to add contact", error);
           throw error;

@@ -177,50 +177,52 @@ export const addContact = asyncHandler(async (req: any, res: any) => {
     // Requirements: "Add a user by username / phone / email"
     
     const { id: contactId } = req.params;
-    const { identifier } = req.body; // Expect { identifier: "email@example.com" } or similar if manual
+    const { name, email, phone, identifier } = req.body; // Support both old identifier and new form fields
     const userId = req.user._id;
 
     let targetUser = null;
 
     if (contactId && mongoose.Types.ObjectId.isValid(contactId)) {
         targetUser = await User.findById(contactId);
-    } else if (identifier) {
-        // Search by email, phone, or name (exact match for add)
-        targetUser = await User.findOne({ 
-            $or: [
-                { email: identifier },
-                { phone: identifier },
-                { name: identifier }
-            ]
-        });
+    } else {
+        // Search by email or phone if provided individually, or by identifier
+        const searchEmail = email || (identifier?.includes('@') ? identifier : null);
+        const searchPhone = phone || (!identifier?.includes('@') ? identifier : null);
+
+        if (searchEmail || searchPhone) {
+            targetUser = await User.findOne({
+                $or: [
+                    ...(searchEmail ? [{ email: searchEmail }] : []),
+                    ...(searchPhone ? [{ phone: searchPhone }] : [])
+                ]
+            });
+        }
     }
 
     if (!targetUser) {
         // User not found -> Create Invite
-        if (!identifier) {
-             throw new ApiError(404, 'User not found');
-        }
-        
-        // Check if identifier is email or phone
-        const isEmail = identifier.includes('@');
-        const isPhone = !isEmail && /^\+?[0-9]{10,15}$/.test(identifier);
-        
-        if (!isEmail && !isPhone) {
-            throw new ApiError(400, "Please provide a valid email or phone number for invitation");
+        const targetEmail = email || (identifier?.includes('@') ? identifier : null);
+        const targetPhone = phone || (!identifier?.includes('@') ? identifier : null);
+        const targetName = name || identifier || "Unknown";
+
+        if (!targetEmail && !targetPhone) {
+            throw new ApiError(400, "Please provide an email or phone number to invite");
         }
 
         // Generate Invite
         const token = crypto.randomBytes(16).toString('hex');
         const invite = await Invite.create({
             senderId: userId,
-            targetEmail: isEmail ? identifier : null,
-            targetPhone: isPhone ? identifier : null,
+            targetEmail,
+            targetPhone,
+            targetName,
             token
         });
         
         return res.status(200).json(new ApiResponse(200, 'User not registered, invite generated', { 
             status: 'invited', 
-            identifier,
+            identifier: targetEmail || targetPhone,
+            targetName,
             inviteUrl: `https://chatterlink.com/register?invite=${token}`
         }));
     }
@@ -251,13 +253,12 @@ export const addContact = asyncHandler(async (req: any, res: any) => {
 
     // Fetch updated user and contact for response
     const updatedUser = await User.findById(userId);
-    const updatedContact = await User.findById(targetUser._id);
+    const updatedContact = await User.findById(targetUser._id).select("-password");
 
     res.status(200).json(
-        new ApiResponse(200, 'Contact added successfully', { 
-            user: updatedUser, 
-            contact: updatedContact, 
-            status: 'added' 
+        new ApiResponse(200, 'User added to contacts', { 
+            status: 'registered',
+            user: updatedContact 
         })
     );
 });

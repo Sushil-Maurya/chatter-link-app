@@ -1,6 +1,7 @@
 import cloudinary from "../lib/cloudinary.js";
 import Message from "../models/Message.js";
 import User from "../models/User.js";
+import Invite from "../models/Invite.js";
 import { onlineUsersMap, io } from "../server.js";
 import { asyncHandler } from "../middleware/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
@@ -39,21 +40,41 @@ export const getAllUsers = asyncHandler(async (req: any, res: any) => {
 
     const filteredUsers = await User.find({ _id: { $in: validUserIds } }).select("-password");
     
-    // count the number of messages not read
-    let unsendMessages: Record<string, number> = {};
-    const unreadCounts = await Promise.all(filteredUsers.map(async (user) => {
-        const count = await Message.countDocuments({ sender: user._id, read: false, receiver: userId });
-        return { userId: user._id, count };
-    }));
+    // 3. Get pending invites
+    const pendingInvites = await Invite.find({ senderId: userId, status: "pending" });
     
-    unreadCounts.forEach(item => {
-        if(item.count > 0) {
-            unsendMessages[item.userId.toString()] = item.count;
+    // count the number of messages not read and get last message
+    let unsendMessages: Record<string, number> = {};
+    let lastMessages: Record<string, any> = {};
+    
+    await Promise.all(filteredUsers.map(async (user) => {
+        const userIdStr = user._id.toString();
+        // Unread count
+        const count = await Message.countDocuments({ sender: user._id, read: false, receiver: userId });
+        if (count > 0) {
+            unsendMessages[userIdStr] = count;
         }
-    });
+
+        // Last message
+        const lastMsg = await Message.findOne({
+            $or: [
+                { sender: userId, receiver: user._id },
+                { sender: user._id, receiver: userId }
+            ]
+        }).sort({ createdAt: -1 });
+        
+        if (lastMsg) {
+            lastMessages[userIdStr] = lastMsg;
+        }
+    }));
 
     res.status(200).json(
-        new ApiResponse(200, 'Users fetched successfully', { users: filteredUsers, unsendMessages })
+        new ApiResponse(200, 'Users fetched successfully', { 
+            users: filteredUsers, 
+            pendingInvites,
+            unsendMessages,
+            lastMessages
+        })
     );
 });
 
