@@ -260,12 +260,15 @@ const ChatLayoutContent: React.FC<ChatLayoutContentProps> = ({
             </SidebarHeader>
             
             <SidebarContent className="overflow-y-auto flex-1 px-0 py-0">
-              <ContactList onSelect={(id) => {
-                navigate(`/chat/${id}`);
-                if (isMobile) {
-                  setOpen(false);
-                }
-              }} />
+              <ContactList 
+                searchQuery={search}
+                onSelect={(id) => {
+                  navigate(`/chat/${id}`);
+                  if (isMobile) {
+                    setOpen(false);
+                  }
+                }} 
+              />
             </SidebarContent>
             
             <SidebarFooter className={`border-t ${theme === 'dark' ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-gray-50'} p-4`}>

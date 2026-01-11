@@ -11,7 +11,12 @@ interface ToastState {
 
 export const useToastStore = create<ToastState>((set) => ({
   show: (message, type = 'blank', options) => {
-    return toast(message, { ...options, type: type as any });
+    switch (type) {
+      case 'success': return toast.success(message, options);
+      case 'error': return toast.error(message, options);
+      case 'loading': return toast.loading(message, options);
+      default: return toast(message, options);
+    }
   },
   success: (message, options) => {
     return toast.success(message, options);

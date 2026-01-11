@@ -20,6 +20,8 @@ interface UserState {
   searchQuery: string;
   setSearchQuery: (query: string) => void;
   getFilteredUsers: () => User[];
+  searchGlobalUsers: (query: string) => Promise<User[]>;
+  addContact: (userId: string) => Promise<void>;
   
   // Reset store
   reset: () => void;
@@ -31,6 +33,9 @@ export const useUserStore = create<UserState>((set, get) => ({
   isLoading: false,
   setUsers: (users) => set({ users }),
   getUsers: async () => {
+    // Avoid redundant calls if already loading or if we already have users
+    if (get().isLoading) return;
+    
     set({ isLoading: true });
     try {
       const res = await userService.getAllUsers();
@@ -103,4 +108,28 @@ export const useUserStore = create<UserState>((set, get) => ({
       onlineUsers: new Set(),
       searchQuery: '',
     }),
+
+  // Add Contact
+  addContact: async (userId: string) => {
+      try {
+          await userService.addContact({ id: userId });
+          // Refresh users list to include new contact
+          await get().getUsers(); 
+      } catch (error) {
+          console.error("Failed to add contact", error);
+          throw error;
+      }
+  },
+
+  // Search Users (Global)
+  searchGlobalUsers: async (query: string) => {
+      try {
+          if(!query) return [];
+          const res = await userService.searchUsers(query);
+          return res.result?.users || res.users || []; // adjust based on API response
+      } catch (error) {
+          console.error("Failed to search users", error);
+          return [];
+      }
+  }
 }));

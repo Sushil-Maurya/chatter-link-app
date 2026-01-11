@@ -7,10 +7,37 @@ import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 
 
-// Get all User except current user
+// Get all User for sidebar (Contacts + Conversations)
 export const getAllUsers = asyncHandler(async (req: any, res: any) => {
     const userId = req.user._id;
-    const filteredUsers = await User.find().select("-password");
+    const currentUser = await User.findById(userId);
+    if (!currentUser) {
+        return res.status(200).json(new ApiResponse(200, 'User not found', { users: [], unsendMessages: {} }));
+    }
+
+    // 1. Get users from contacts array
+    const contactIds = currentUser.contacts || [];
+
+    // 2. Get users from existing messages (conversations)
+    const distinctConversations = await Message.find({
+        $or: [{ sender: userId }, { receiver: userId }]
+    }).distinct('sender receiver');
+    // Note: distinct returns array of all senders and receivers involved in messages with me.
+    // We need to filter out my own ID and combine with contacts.
+    
+    // Flatten and filter IDs
+    // Since distinct might return fields, let's just use a more robust aggregation or simple logic.
+    // Aggregation is better for unique pairs, but standard find/distinct is okay for now.
+    
+    const conversationUserIds = await Message.distinct('sender', { receiver: userId });
+    const conversationReceiverIds = await Message.distinct('receiver', { sender: userId });
+    
+    const allInteractionIds = [...new Set([...contactIds.map((id:any) => id.toString()), ...conversationUserIds.map((id:any) => id.toString()), ...conversationReceiverIds.map((id:any) => id.toString())])];
+    
+    // Filter out self
+    const validUserIds = allInteractionIds.filter(id => id !== userId.toString());
+
+    const filteredUsers = await User.find({ _id: { $in: validUserIds } }).select("-password");
     
     // count the number of messages not read
     let unsendMessages: Record<string, number> = {};
@@ -75,6 +102,7 @@ export const sendMessage = asyncHandler(async (req: any, res: any) => {
         videoUrl = upload.secure_url;
     }
     const newMessage = await Message.create({ sender: senderId, receiver: receiverId, text ,image: imgUrl,video: videoUrl});
+    
     // emit the new message to receiver's socket
     const receiverSocketId = onlineUsersMap[receiverId as string];
     if(receiverSocketId){
@@ -85,6 +113,24 @@ export const sendMessage = asyncHandler(async (req: any, res: any) => {
     if(senderSocketId){
         io.to(senderSocketId).emit("newMessage", newMessage);
     }
+    
+    // Logic for Auto-Add Contacts (WhatsApp style)
+    try {
+        // Add receiver to sender's contacts if not present (using $addToSet to avoid duplicates)
+        await User.findByIdAndUpdate(
+            senderId,
+            { $addToSet: { contacts: receiverId } }
+        );
+        
+        // Add sender to receiver's contacts if not present
+        await User.findByIdAndUpdate(
+            receiverId,
+            { $addToSet: { contacts: senderId } }
+        );
+    } catch (err) {
+        console.error("Error auto-adding contacts:", err);
+    }
+
     res.status(201).json(
         new ApiResponse(201, 'Message sent successfully', { message: newMessage })
     );

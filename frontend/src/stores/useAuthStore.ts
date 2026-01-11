@@ -36,6 +36,9 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   socket: null,
 
   checkAuth: async () => {
+    if (get().isCheckingAuth && get().authUser) return; // Already checked and have user
+    
+    set({ isCheckingAuth: true });
     try {
       const res = await authService.checkAuth();
       set({ authUser: res.result.user });
@@ -103,16 +106,16 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   },
 
   connectSocket: () => {
-    const { authUser } = get();
-    if (!authUser || get().socket?.connected) return;
+    const { authUser, socket: currentSocket } = get();
+    if (!authUser || currentSocket) return;
 
     const socket = io(BASE_URL, {
       query: {
         userId: authUser._id,
       },
+      autoConnect: true
     });
-    socket.connect();
-
+    
     set({ socket: socket });
 
     socket.on("getOnlineUsers", (userIds: string[]) => {

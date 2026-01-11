@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-import { toast } from 'react-hot-toast';
 import { chatService } from "../services/chatService";
 import { useAuthStore } from "./useAuthStore";
 import { Message, Conversation } from '../types';
@@ -12,6 +11,8 @@ interface ChatState {
   // Conversations
   conversations: Conversation[];
   setConversations: (conversations: Conversation[]) => void;
+  addConversation: (conversation: Conversation) => void;
+  updateConversation: (conversationId: string, updates: Partial<Conversation>) => void;
   
   // Messages
   messages: Message[];
@@ -39,11 +40,11 @@ export const useChatStore = create<ChatState>((set, get) => ({
   // Conversations
   conversations: [],
   setConversations: (conversations) => set({ conversations }),
-  addConversation: (conversation) => 
+  addConversation: (conversation: Conversation) => 
     set((state) => ({
       conversations: [...state.conversations, conversation]
     })),
-  updateConversation: (conversationId, updates) =>
+  updateConversation: (conversationId: string, updates: Partial<Conversation>) =>
     set((state) => ({
       conversations: state.conversations.map((conv) =>
         conv._id === conversationId ? { ...conv, ...updates } : conv
@@ -54,6 +55,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
   messages: [],
   isMessagesLoading: false,
   getMessages: async (userId: string) => {
+    // Avoid double loading the same or different users simultaneously
+    if (get().isMessagesLoading) return;
+
     set({ isMessagesLoading: true });
     try {
       const res = await chatService.getMessages(userId);

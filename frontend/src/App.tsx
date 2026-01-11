@@ -79,12 +79,12 @@ function App() {
 
   useEffect(() => {
     checkAuth();
-  }, [checkAuth]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // If user is already authenticated, redirect from login/register to chat
-  const RedirectIfAuthenticated = ({ children }: { children: JSX.Element }) => {
+  const RedirectIfAuthenticated = ({ children }: { children: React.ReactNode }) => {
      if (authUser) return <Navigate to="/chat" />;
-     return children;
+     return <>{children}</>;
   }
 
   return (

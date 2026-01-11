@@ -4,7 +4,6 @@ import { useParams } from 'react-router-dom';
 import ChatLayout from '../components/ChatLayout';
 import ChatWindow from '../components/ChatWindow';
 import { useTheme } from '../context/ThemeProvider';
-import { useIsMobile } from '../hooks/use-mobile';
 import ContactDrawer from '../components/ContactDrawer';
 import { useUserStore } from '../stores/useUserStore';
 
@@ -19,7 +18,7 @@ const Chat: React.FC = () => {
     if (users.length === 0) {
       getUsers();
     }
-  }, [users.length, getUsers]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Check if contact exists when id or users change
   useEffect(() => {

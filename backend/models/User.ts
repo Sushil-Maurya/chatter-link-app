@@ -11,6 +11,11 @@ const userSchema = new mongoose.Schema({
         required: true,
         unique: true
     },
+    phone: {
+        type: String,
+        default: null,
+        sparse: true // Allows multiple nulls but unique values
+    },
     password: {
         type: String,
         required: true
@@ -27,7 +32,11 @@ const userSchema = new mongoose.Schema({
     bio: {
         type: String,
         default: ""
-    }
+    },
+    contacts: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User"
+    }]
 }, {
     timestamps: true
 });
